@@ -28,5 +28,18 @@ db.getCollection('everything').aggregate([
     },
     {
         $unwind: "$jg_array"
+    },
+    {
+        $match: {
+            $expr: {$and: [{$eq: [ "$jg_array.winning_side" , "$jg_array.side"]}, { $gt: ["$jg_array.gold_difference", 0]}]}
+        }
+    },
+    {
+        $group: { _id: 0, "count": { $sum: 1 }}
+    },
+    {
+        $project: {
+            "percentage": { $divide: ["$count", db.everything.find({ "year": 2018 }).count()] }
+        }
     }
 ])
