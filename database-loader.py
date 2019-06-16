@@ -17,12 +17,11 @@ with open('matchinfo.csv', mode='r') as csv_file:
             matchinfo = dict()
             matchinfo['address'] = row['Address']
             matchinfo['league'] = row['League']
-            matchinfo['year'] = row['Year']
+            matchinfo['year'] = int(row['Year'])
             matchinfo['season'] = row['Season']
 
-            matchinfo['blueResult'] = row['bResult']
-            matchinfo['redResult'] = row['rResult']
-            matchinfo['gamelength'] = row['gamelength']
+            matchinfo['winningSide'] = 'blue' if row['bResult'] == '1' else 'red'
+            matchinfo['gamelength'] = int(row['gamelength'])
 
             blue_team = dict()
             red_team = dict()
@@ -101,11 +100,17 @@ with open('kills.csv', mode='r') as csv_file:
                 
                 kill = dict()
                 kill['side'] = 'blue' if row['Team'] == 'bKills' else 'red'
+                kill['team'] = match['blueTeam']['blueTeamTag'] if row['Team'] == 'bKills' else match['redTeam']['redTeamTag']
                 kill['victim'] = row['Victim']
                 kill['killer'] = row['Killer']
-                kill['time'] = row['Time']
+                try:
+                    time = float(row['Time'])
+                    kill['time'] = time
+                except ValueError:
+                    kill['time'] = match['gamelength'] - 1
 
                 kills.append(kill)
+                kills = sorted(kills, key=lambda k: k['time'])
                 match['kills'] = kills
     print(f'Kills: Processed {line_count} lines.')
 
@@ -128,11 +133,17 @@ with open('structures.csv', mode='r') as csv_file:
                 
                 structure = dict()
                 structure['side'] = 'blue' if row['Team'][0] == 'b' else 'red'
-                structure['time'] = row['Time']
+                structure['team'] = match['blueTeam']['blueTeamTag'] if row['Team'][0] == 'b' else match['redTeam']['redTeamTag']
+                try:
+                    time = float(row['Time'])
+                    structure['time'] = time
+                except ValueError:
+                    structure['time'] = match['gamelength'] - 1
                 structure['lane'] = row['Lane']
                 structure['type'] = row['Type']
 
                 structures.append(structure)
+                structures = sorted(structures, key=lambda k: k['time'])
                 match['structures'] = structures
     print(f'Structures: Processed {line_count} lines.')
 
@@ -169,7 +180,12 @@ with open('monsters.csv', mode='r') as csv_file:
                 
                 slay = dict()
                 slay['side'] = 'blue' if row['Team'][0] == 'b' else 'red'
-                slay['time'] = row['Time']
+                slay['team'] = match['blueTeam']['blueTeamTag'] if row['Team'][0] == 'b' else match['redTeam']['redTeamTag']
+                try:
+                    time = float(row['Time'])
+                    slay['time'] = time
+                except ValueError:
+                    pass
                 where.append(slay)
 
                 match['neutral_objectives'] = neutral_objectives
@@ -208,7 +224,6 @@ with open('LeagueofLegends.csv', mode='r') as csv_file:
     print(f'Gold: Processed {line_count} lines.')
 
 
-pdb.set_trace()
 client = pymongo.MongoClient('localhost', 27017)
 db = client['LeagueOfLegends_TEST']
 collection = db['everything']
